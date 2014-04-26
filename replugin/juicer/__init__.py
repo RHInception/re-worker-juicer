@@ -20,7 +20,7 @@ class Juicer(Worker):
            dynamic.get('environment', None) == None:
             self.reject(basic_deliver)
             self.app_logger.error("Rejecting message, invalid dynamic data provided")
-            self.send('release.step', corr_id, {'status': 'failed'})
+            self.send(properties.reply_to, corr_id, {'status': 'failed'}, exchange='')
             self.notify(
                 'Juicer Failed',
                 'Juicer failed. No dynamic keys given. Expected: "cart" and "environment"',
@@ -33,10 +33,11 @@ class Juicer(Worker):
             environment = dynamic['environment']
             self.app_logger.info("Not rejecting. Processing: %s %s" % (cart, environment))
 
-        self.send('release.step', corr_id, {'status': 'started'})
+        self.send(properties.reply_to, corr_id, {'status': 'started'}, exchange='')
         self._j_pull(cart)
         self._j_push(cart, environment)
-
+        self.app_logger.info("Pulled and pushed cart")
+        self.send(properties.reply_to, corr_id, {'status': 'completed'}, exchange='')
 
     def _j_pull(self, cart_name):
         """
@@ -70,5 +71,5 @@ if __name__ == '__main__':
         'user': 'guest',
         'password': 'guest',
     }
-    worker = Juicer(mq_conf, 'worker queue', '/tmp/logs/')
+    worker = Juicer(mq_conf, '/tmp/logs/')
     worker.run_forever()
