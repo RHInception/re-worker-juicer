@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 from reworker.worker import Worker
-from juicer.juicer.Juicer import Juicer as j
+from juicer.juicer.Juicer import Juicer as juice
 import juicer.juicer.Parser
+import juicer.utils.Log
+import juicer.common.Cart
 import logging
 
 class Juicer(Worker):
@@ -13,51 +15,85 @@ class Juicer(Worker):
 
     def process(self, channel, basic_deliver, properties, body, output):
         juicer.utils.Log.LOG_LEVEL_CURRENT = 0
-        corr_id = str(properties.correlation_id)
+        self.corr_id = str(properties.correlation_id)
         dynamic = body.get('dynamic', {})
+        self.reply_to = properties.reply_to
+
         if dynamic == {} or \
            dynamic.get('cart', None) == None or \
            dynamic.get('environment', None) == None:
             self.reject(basic_deliver)
-            self.app_logger.error("Rejecting message, invalid dynamic data provided")
-            self.send(properties.reply_to, corr_id, {'status': 'failed'}, exchange='')
+            self.app_logger.error("%s - Rejecting message, invalid dynamic data provided" % self.corr_id)
+            self.send(self.reply_to, self.corr_id, {'status': 'failed'}, exchange='')
             self.notify(
                 'Juicer Failed',
                 'Juicer failed. No dynamic keys given. Expected: "cart" and "environment"',
                 'failed',
-                corr_id)
+                self.corr_id)
             return False
         else:
             self.ack(basic_deliver)
             cart = dynamic['cart']
             environment = dynamic['environment']
-            self.app_logger.info("Not rejecting. Processing: %s %s" % (cart, environment))
+            self.app_logger.debug("%s - Not rejecting. Processing: %s %s" % (self.corr_id, cart, environment))
 
-        self.send(properties.reply_to, corr_id, {'status': 'started'}, exchange='')
-        self._j_pull(cart)
-        self._j_push(cart, environment)
-        self.app_logger.info("Pulled and pushed cart")
-        self.send(properties.reply_to, corr_id, {'status': 'completed'}, exchange='')
+        self.send(self.reply_to, self.corr_id, {'status': 'started'}, exchange='')
+        if self._j_pull(cart):
+            if self._j_push(cart, environment):
+                self.app_logger.info("%s - Pulled and pushed cart '%s' to %s" %
+                                     (self.corr_id, cart, environment))
+                self.send(self.reply_to, self.corr_id, {'status': 'completed'}, exchange='')
+            else:
+                self.app_logger.error("%s - Couldn't push cart: %s" % (self.corr_id, cart))
+                self.send(self.reply_to, self.corr_id, {'status': 'errored'}, exchange='')
 
     def _j_pull(self, cart_name):
         """
         Pull down `cart_name` from MongoDB
         """
-        self.app_logger.info("Pulling down cart: %s" % cart_name)
+        self.app_logger.info("%s - Pulling down cart: %s" % (self.corr_id, cart_name))
         parser = juicer.juicer.Parser.Parser()
-        args = parser.parser.parse_args(['cart', 'pull', cart_name])
-        result = args.j(args)
-        self.app_logger.info("Received cart: %s" % cart_name)
+        args = parser.parser.parse_args([ '-v', 'cart', 'pull', cart_name])
+        self.app_logger.debug("%s - Calling juicer api method: %s with: %s" %
+                              (self.corr_id,
+                               str(args.j),
+                               args))
+
+        juiced = juice(args)
+
+        result = juiced.pull(cartname=args.cartname)
+        self.app_logger.debug("%s - API result: %s" % (self.corr_id, str(result)))
+        if result:
+            self.app_logger.info("%s - Received cart: %s" % (self.corr_id, cart_name))
+            return True
+        else:
+            self.app_logger.error("%s - Couldn't find cart: %s" % (self.corr_id, cart_name))
+            self.send(self.reply_to, self.corr_id, {'status': 'errored'}, exchange='')
+            return False
 
     def _j_push(self, cart_name, environment):
         """
         Push `cart_name` to `environment`
         """
-        self.app_logger.info("Pushing cart %s to environment %s" % (cart_name, environment))
+        self.app_logger.info("%s - Pushing cart %s to environment %s" % (self.corr_id, cart_name, environment))
         parser = juicer.juicer.Parser.Parser()
-        args = parser.parser.parse_args(['cart', 'push', cart_name, '--in', environment])
-        result = args.j(args)
-        self.app_logger.info("Pushed cart %s to environment %s" % (cart_name, environment))
+        args = parser.parser.parse_args(['-v', 'cart', 'push', cart_name, '--in', environment])
+
+        try:
+            juiced = juice(args)
+            cart = juicer.common.Cart.Cart(args.cartname, autoload=True, autosync=True)
+            result = juiced.push(cart, env=environment, callback=self.on_upload)
+            self.app_logger.info("%s - Pushed cart %s to environment %s" % (self.corr_id, cart_name, environment))
+            return True
+        except Exception:
+            # Something broke...
+            return False
+
+    def on_upload(self, rpm_name):
+        """
+        Callback for the juicer cart push method when an RPM is uploaded
+        """
+        self.app_logger.info("%s - Uploaded an RPM: %s" % (self.corr_id, rpm_name))
 
 
 if __name__ == '__main__':
@@ -71,5 +107,5 @@ if __name__ == '__main__':
         'user': 'guest',
         'password': 'guest',
     }
-    worker = Juicer(mq_conf, '/tmp/logs/')
+    worker = Juicer(mq_conf, output_dir='/tmp/logs/')
     worker.run_forever()
