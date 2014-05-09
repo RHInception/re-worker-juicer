@@ -14,6 +14,7 @@ class Juicer(Worker):
     dynamic = ['cart', 'environment']
 
     def process(self, channel, basic_deliver, properties, body, output):
+        self.output = output
         juicer.utils.Log.LOG_LEVEL_CURRENT = 0
         self.corr_id = str(properties.correlation_id)
         dynamic = body.get('dynamic', {})
@@ -35,11 +36,17 @@ class Juicer(Worker):
             self.ack(basic_deliver)
             cart = dynamic['cart']
             environment = dynamic['environment']
+            output.info("Dynamic cart push parameters: Cart: %s; Environment: " % (
+                cart,
+                environment))
             self.app_logger.debug("%s - Not rejecting. Processing: %s %s" % (self.corr_id, cart, environment))
 
         self.send(self.reply_to, self.corr_id, {'status': 'started'}, exchange='')
         if self._j_pull(cart):
+            self.output.info("Received cart: %s" % (cart_name))
             if self._j_push(cart, environment):
+                self.output.info("Pushed cart %s to environment %s" % (
+                    cart_name, environment))
                 self.app_logger.info("%s - Pulled and pushed cart '%s' to %s" %
                                      (self.corr_id, cart, environment))
                 self.send(self.reply_to, self.corr_id, {'status': 'completed'}, exchange='')
@@ -68,6 +75,7 @@ class Juicer(Worker):
             return True
         else:
             self.app_logger.error("%s - Couldn't find cart: %s" % (self.corr_id, cart_name))
+            self.output.error("%s - Couldn't find cart: %s" % (self.corr_id, cart_name))
             self.send(self.reply_to, self.corr_id, {'status': 'errored'}, exchange='')
             return False
 
@@ -94,7 +102,7 @@ class Juicer(Worker):
         Callback for the juicer cart push method when an RPM is uploaded
         """
         self.app_logger.info("%s - Uploaded an RPM: %s" % (self.corr_id, rpm_name))
-
+        self.output.info("%s - Uploaded an RPM: %s" % (self.corr_id, rpm_name))
 
 if __name__ == '__main__':
     logging.getLogger('pika').setLevel(logging.CRITICAL)
