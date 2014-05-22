@@ -36,6 +36,11 @@ class Juicer(Worker):
                     'Expected: "cart" and "environment"'),
                 'failed',
                 self.corr_id)
+            self.send(self.reply_to,
+                      self.corr_id,
+                      {'status': 'errored',
+                       "message": "No dynamic keys given, expected 'cart' and 'environment'"},
+                      exchange='')
             return False
         else:
             self.ack(basic_deliver)
