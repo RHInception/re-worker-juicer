@@ -25,6 +25,9 @@ from . import TestCase
 
 from replugin import juicer
 
+import logging
+
+logging.disable(logging.CRITICAL)
 
 MQ_CONF = {
     'server': '127.0.0.1',
@@ -45,6 +48,7 @@ class TestFuncWorker(TestCase):
         self.channel = mock.MagicMock('pika.spec.Channel')
         self.channel.basic_consume = mock.Mock('basic_consume')
         self.channel.basic_ack = mock.Mock('basic_ack')
+        self.channel.basic_reject = mock.Mock('basic_reject')
         self.channel.basic_publish = mock.Mock('basic_publish')
 
         self.basic_deliver = mock.MagicMock()
@@ -73,6 +77,7 @@ class TestFuncWorker(TestCase):
         self.channel.reset_mock()
         self.channel.basic_consume.reset_mock()
         self.channel.basic_ack.reset_mock()
+        self.channel.basic_reject.reset_mock()
         self.channel.basic_publish.reset_mock()
 
         self.basic_deliver.reset_mock()
@@ -81,3 +86,29 @@ class TestFuncWorker(TestCase):
         self.logger.reset_mock()
         self.app_logger.reset_mock()
         self.connection.reset_mock()
+
+    def test_process(self):
+        """
+        Test were everything is nice
+        """
+        body = {
+            'dynamic': {
+                'cart': 'CHG1337',
+                'environment': 'qa'
+            }
+        }
+
+        jw = juicer.Juicer(MQ_CONF, output_dir='/tmp/')
+        jw.process(self.channel, self.basic_deliver, self.properties, body, self.logger)
+        jw.on_upload('juicer')
+
+    def test_process_no_dynamic(self):
+        """
+        no dynamic data is provided = failboat
+        """
+        body = {
+            'dynamic': { }
+        }
+
+        jw = juicer.Juicer(MQ_CONF, output_dir='/tmp/')
+        jw.process(self.channel, self.basic_deliver, self.properties, body, self.logger)

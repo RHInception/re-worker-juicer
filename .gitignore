@@ -56,3 +56,4 @@ docs/_build/
 # Editor garbage
 *~
 rpm-build
+cover/

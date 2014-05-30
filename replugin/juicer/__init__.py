@@ -15,6 +15,7 @@ class Juicer(Worker):
     dynamic = ['cart', 'environment']
 
     def process(self, channel, basic_deliver, properties, body, output):
+        self._channel = channel
         self.output = output
         juicer.utils.Log.LOG_LEVEL_CURRENT = 0
         self.corr_id = str(properties.correlation_id)
@@ -47,7 +48,7 @@ class Juicer(Worker):
             cart = dynamic['cart']
             environment = dynamic['environment']
             output.info(
-                "Dynamic cart push parameters: Cart: %s; Environment: " % (
+                "Dynamic cart push parameters: Cart: %s; Environment: %s" % (
                     cart,
                     environment))
             self.app_logger.debug("%s - Not rejecting. Processing: %s %s" % (
@@ -56,10 +57,10 @@ class Juicer(Worker):
         self.send(
             self.reply_to, self.corr_id, {'status': 'started'}, exchange='')
         if self._j_pull(cart):
-            self.output.info("Received cart: %s" % (cart_name))
+            self.output.info("Received cart: %s" % (cart))
             if self._j_push(cart, environment):
                 self.output.info("Pushed cart %s to environment %s" % (
-                    cart_name, environment))
+                    cart, environment))
                 self.app_logger.info("%s - Pulled and pushed cart '%s' to %s" %
                                      (self.corr_id, cart, environment))
                 self.send(
@@ -141,7 +142,7 @@ class Juicer(Worker):
             self.corr_id, rpm_name))
         self.output.info("%s - Uploaded an RPM: %s" % (self.corr_id, rpm_name))
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # pragma: no cover
     logging.getLogger('pika').setLevel(logging.CRITICAL)
     logging.getLogger('pika.channel').setLevel(logging.CRITICAL)
 
