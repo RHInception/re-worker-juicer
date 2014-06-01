@@ -118,6 +118,8 @@ class TestFuncWorker(TestCase):
             'juicer.common.Cart': mock.Mock()
         }
 
+        # We need to mock out the dependent juicer modules before we
+        # can import the code to be tested.
         with mock.patch.dict('sys.modules', modules):
             import replugin.juicerworker
             with mock.patch.object(replugin.juicerworker.JuicerWorker, '_j_pull') as (
@@ -176,4 +178,3 @@ class TestFuncWorker(TestCase):
 
                     assert mock_j_pull.call_count == 0
                     assert mock_j_push.call_count == 0
-
