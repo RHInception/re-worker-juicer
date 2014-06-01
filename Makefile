@@ -38,7 +38,7 @@ unittests:
 	@echo "#############################################"
 	@echo "# Running Unit Tests"
 	@echo "#############################################"
-	nosetests -v --with-cover --cover-min-percentage=80 --cover-package=replugin test/
+	nosetests -v --with-cover --cover-min-percentage=80 --cover-package=replugin --cover-html test/
 
 clean:
 	@find . -type f -regex ".*\.py[co]$$" -delete

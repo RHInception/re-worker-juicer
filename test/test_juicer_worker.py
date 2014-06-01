@@ -90,7 +90,7 @@ class TestFuncWorker(TestCase):
 
     def test_process(self):
         """
-        Test were everything is nice
+        Test were everything is nice, up to calling pull/push
         """
         body = {
             'dynamic': {
@@ -103,39 +103,39 @@ class TestFuncWorker(TestCase):
         modules = {
             # juicer
             'juicer': juicer_mock,
-
             # juicer.juicer.Juicer/Parser
-            'juicer.juicer': mock.Mock(),
-            'juicer.juicer.Juicer': mock.Mock(),
-            'juicer.juicer.Parser': mock.Mock(),
-
+            'juicer.juicer': mock.Mock(), 'juicer.juicer.Juicer': mock.Mock(), 'juicer.juicer.Parser': mock.Mock(),
             # juicer.utils.Log
-            'juicer.utils': mock.Mock(),
-            'juicer.utils.Log': mock.Mock(),
-
+            'juicer.utils': mock.Mock(), 'juicer.utils.Log': mock.Mock(),
             # juicer.common.Cart
-            'juicer.common': mock.Mock(),
-            'juicer.common.Cart': mock.Mock()
+            'juicer.common': mock.Mock(), 'juicer.common.Cart': mock.Mock()
         }
 
         # We need to mock out the dependent juicer modules before we
         # can import the code to be tested.
         with mock.patch.dict('sys.modules', modules):
+            mock.patch('replugin.juicerworker.reworker.worker.pika')
+            # for k in sorted(sys.modules.keys()):
+            #     print "%s: %s" % (k, sys.modules[k])
             import replugin.juicerworker
             with mock.patch.object(replugin.juicerworker.JuicerWorker, '_j_pull') as (
                     mock_j_pull):
                 with mock.patch.object(replugin.juicerworker.JuicerWorker, '_j_push') as (
                         mock_j_push):
-                    jw = replugin.juicerworker.JuicerWorker(MQ_CONF,
-                                                            output_dir='/tmp/')
+                    with mock.patch('pika.SelectConnection'):
+                        jw = replugin.juicerworker.JuicerWorker(MQ_CONF,
+                                                                output_dir='/tmp/')
 
-                    jw.process(self.channel, self.basic_deliver,
-                               self.properties, body, self.logger)
+                        jw.process(self.channel, self.basic_deliver,
+                                   self.properties, body, self.logger)
 
-                    jw.on_upload('juicer')
+                        jw.on_upload('juicer')
 
-                    mock_j_pull.assert_called_once_with(CHANGE_NAME)
-                    mock_j_push.assert_called_once_with(CHANGE_NAME, CART_ENV)
+                        mock_j_pull.assert_called_once_with(CHANGE_NAME)
+                        mock_j_push.assert_called_once_with(CHANGE_NAME, CART_ENV)
+
+        self._reset_mocks()
+
 
     def test_process_no_dynamic(self):
         """
@@ -170,11 +170,57 @@ class TestFuncWorker(TestCase):
                     mock_j_pull):
                 with mock.patch.object(replugin.juicerworker.JuicerWorker, '_j_push') as (
                         mock_j_push):
-                    jw = replugin.juicerworker.JuicerWorker(MQ_CONF,
-                                                            output_dir='/tmp/')
+                    with mock.patch('pika.SelectConnection'):
+                        jw = replugin.juicerworker.JuicerWorker(MQ_CONF,
+                                                                output_dir='/tmp/')
 
-                    jw.process(self.channel, self.basic_deliver,
-                               self.properties, body, self.logger)
+                        jw.process(self.channel, self.basic_deliver,
+                                   self.properties, body, self.logger)
 
-                    assert mock_j_pull.call_count == 0
-                    assert mock_j_push.call_count == 0
+                        assert mock_j_pull.call_count == 0
+                        assert mock_j_push.call_count == 0
+
+        self._reset_mocks()
+
+
+    def test_pull(self):
+        """
+        Test pulling
+        """
+        body = {
+            'dynamic': {
+                'cart': CHANGE_NAME,
+                'environment': CART_ENV
+            }
+        }
+
+        juicer_mock = mock.Mock()
+        modules = {
+            # juicer
+            'juicer': juicer_mock,
+
+            # juicer.juicer.Juicer/Parser
+            'juicer.juicer': mock.Mock(),
+            'juicer.juicer.Juicer': mock.Mock(),
+            'juicer.juicer.Parser': mock.Mock(),
+
+            # juicer.utils.Log
+            'juicer.utils': mock.Mock(),
+            'juicer.utils.Log': mock.Mock(),
+
+            # juicer.common.Cart
+            'juicer.common': mock.Mock(),
+            'juicer.common.Cart': mock.Mock()
+        }
+
+        # We need to mock out the dependent juicer modules before we
+        # can import the code to be tested.
+        with mock.patch.dict('sys.modules', modules):
+            import replugin.juicerworker
+            with mock.patch('pika.SelectConnection'):
+                jw = replugin.juicerworker.JuicerWorker(MQ_CONF,
+                                                        output_dir='/tmp/')
+                jw.process(self.channel, self.basic_deliver,
+                           self.properties, body, self.logger)
+
+        self._reset_mocks()

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from reworker.worker import Worker
+import reworker.worker
 import juicer.juicer.Juicer
 import juicer.juicer.Parser
 import juicer.utils.Log
@@ -7,7 +7,7 @@ import juicer.common.Cart
 import logging
 
 
-class JuicerWorker(Worker):
+class JuicerWorker(reworker.worker.Worker):
     """
     Plugin to run pulp commands. Lets begin with just cart promoting.
     """
