@@ -18,12 +18,11 @@ Unittests.
 
 import pika
 import mock
+import sys
 
 from contextlib import nested
 
 from . import TestCase
-
-from replugin import juicerworker
 
 import logging
 
@@ -36,6 +35,8 @@ MQ_CONF = {
     'user': 'guest',
     'password': 'guest',
 }
+CHANGE_NAME = "CHG1337"
+CART_ENV = "qa"
 
 
 class TestFuncWorker(TestCase):
@@ -87,28 +88,62 @@ class TestFuncWorker(TestCase):
         self.app_logger.reset_mock()
         self.connection.reset_mock()
 
+#    @mock.patch('replugin.juicerworker.juicer.juicer.Juicer')
     def test_process(self):
         """
         Test were everything is nice
         """
         body = {
             'dynamic': {
-                'cart': 'CHG1337',
-                'environment': 'qa'
+                'cart': CHANGE_NAME,
+                'environment': CART_ENV
             }
         }
 
-        jw = juicerworker.JuicerWorker(MQ_CONF, output_dir='/tmp/')
-        jw.process(self.channel, self.basic_deliver, self.properties, body, self.logger)
-        jw.on_upload('juicer')
+        juicer_mock = mock.Mock()
+        modules = {
+            # juicer
+            'juicer': juicer_mock,
 
-    def test_process_no_dynamic(self):
-        """
-        no dynamic data is provided = failboat
-        """
-        body = {
-            'dynamic': { }
+            # juicer.juicer.Juicer/Parser
+            'juicer.juicer': mock.Mock(),
+            'juicer.juicer.Juicer': mock.Mock(),
+            'juicer.juicer.Parser': mock.Mock(),
+
+            # juicer.utils.Log
+            'juicer.utils': mock.Mock(),
+            'juicer.utils.Log': mock.Mock(),
+
+            # juicer.common.Cart
+            'juicer.common': mock.Mock(),
+            'juicer.common.Cart': mock.Mock()
         }
 
-        jw = juicerworker.JuicerWorker(MQ_CONF, output_dir='/tmp/')
-        jw.process(self.channel, self.basic_deliver, self.properties, body, self.logger)
+        with mock.patch.dict('sys.modules', modules):
+            import replugin.juicerworker
+            with mock.patch.object(replugin.juicerworker.JuicerWorker, '_j_pull') as (
+                    mock_j_pull):
+                with mock.patch.object(replugin.juicerworker.JuicerWorker, '_j_push') as (
+                        mock_j_push):
+                    jw = replugin.juicerworker.JuicerWorker(MQ_CONF, output_dir='/tmp/')
+                    jw.process(self.channel, self.basic_deliver, self.properties, body, self.logger)
+                    jw.on_upload('juicer')
+                    print mock_j_pull.call_args_list
+                    mock_j_pull.assert_called_once_with(CHANGE_NAME)
+                    mock_j_push.assert_called_once_with(CHANGE_NAME, CART_ENV)
+
+    # @mock.patch('replugin.juicerworker.juicer.juicer.Juicer')
+    # def test_process_no_dynamic(self, j):
+    #     """
+    #     no dynamic data is provided = failboat
+    #     """
+    #     body = {
+    #         'dynamic': { }
+    #     }
+
+    #     import replugin.juicerworker
+
+    #     jw = replugin.juicerworker.JuicerWorker(MQ_CONF, output_dir='/tmp/')
+    #     jw.process(self.channel, self.basic_deliver, self.properties, body, self.logger)
+
+    #     print j.call_args_list

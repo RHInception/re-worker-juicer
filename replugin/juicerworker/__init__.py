@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from reworker.worker import Worker
-from juicer.juicer.Juicer import Juicer as juice
+import juicer.juicer.Juicer
 import juicer.juicer.Parser
 import juicer.utils.Log
 import juicer.common.Cart
@@ -90,7 +90,7 @@ class JuicerWorker(Worker):
                                str(args.j),
                                args))
 
-        juiced = juice(args)
+        juiced = juicer.juicer.Juicer.Juicer(args)
 
         result = juiced.pull(cartname=args.cartname)
         self.app_logger.debug("%s - API result: %s" % (
@@ -122,10 +122,10 @@ class JuicerWorker(Worker):
             '-v', 'cart', 'push', cart_name, '--in', environment])
 
         try:
-            juiced = juice(args)
+            juiced = juicer.juicer.Juicer.Juicer(args)
             cart = juicer.common.Cart.Cart(
                 args.cartname, autoload=True, autosync=True)
-            result = juiced.push(
+            juiced.push(
                 cart, env=environment, callback=self.on_upload)
             self.app_logger.info("%s - Pushed cart %s to environment %s" % (
                 self.corr_id, cart_name, environment))
@@ -153,5 +153,5 @@ if __name__ == '__main__':  # pragma: no cover
         'user': 'guest',
         'password': 'guest',
     }
-    worker = Juicer(mq_conf, output_dir='/tmp/logs/')
+    worker = JuicerWorker(mq_conf, output_dir='/tmp/logs/')
     worker.run_forever()

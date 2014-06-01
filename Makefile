@@ -31,7 +31,7 @@ sdist: clean
 	python setup.py sdist
 	rm -fR juicerworker.egg-info
 
-tests: unittests pep8 pyflakes
+tests: clean unittests pep8 pyflakes
 	:
 
 unittests:
