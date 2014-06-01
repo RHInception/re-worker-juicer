@@ -23,7 +23,7 @@ from contextlib import nested
 
 from . import TestCase
 
-from replugin import juicer
+from replugin import juicerworker
 
 import logging
 
@@ -98,7 +98,7 @@ class TestFuncWorker(TestCase):
             }
         }
 
-        jw = juicer.Juicer(MQ_CONF, output_dir='/tmp/')
+        jw = juicerworker.JuicerWorker(MQ_CONF, output_dir='/tmp/')
         jw.process(self.channel, self.basic_deliver, self.properties, body, self.logger)
         jw.on_upload('juicer')
 
@@ -110,5 +110,5 @@ class TestFuncWorker(TestCase):
             'dynamic': { }
         }
 
-        jw = juicer.Juicer(MQ_CONF, output_dir='/tmp/')
+        jw = juicerworker.JuicerWorker(MQ_CONF, output_dir='/tmp/')
         jw.process(self.channel, self.basic_deliver, self.properties, body, self.logger)
