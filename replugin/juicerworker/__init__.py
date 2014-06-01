@@ -7,7 +7,7 @@ import juicer.common.Cart
 import logging
 
 
-class Juicer(Worker):
+class JuicerWorker(Worker):
     """
     Plugin to run pulp commands. Lets begin with just cart promoting.
     """
