@@ -18,7 +18,7 @@ Source0: %{_src_name}-%{version}.tar.gz
 Url: https://github.com/rhinception/re-worker-juicer
 
 BuildArch: noarch
-BuildRequires: python2-devel
+BuildRequires: python2-devel, python-setuptools
 Requires: reworker, juicer
 
 %description
