@@ -9,4 +9,4 @@ script:
     - "nosetests -v --with-cover --cover-min-percentage=80 --cover-package=replugin test/"
 notifications:
     email: false
-    flowdock: e1476285b9112f7c9455770d8f773049
+    flowdock: 252ee174a64c87d75f2846cf694ecad6
