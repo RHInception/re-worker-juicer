@@ -142,7 +142,8 @@ class JuicerWorker(reworker.worker.Worker):
             self.corr_id, rpm_name))
         self.output.info("%s - Uploaded an RPM: %s" % (self.corr_id, rpm_name))
 
-if __name__ == '__main__':  # pragma: no cover
+
+def main():  # pragma: no cover
     logging.getLogger('pika').setLevel(logging.CRITICAL)
     logging.getLogger('pika.channel').setLevel(logging.CRITICAL)
 
@@ -155,3 +156,7 @@ if __name__ == '__main__':  # pragma: no cover
     }
     worker = JuicerWorker(mq_conf, output_dir='/tmp/logs/')
     worker.run_forever()
+
+
+if __name__ == '__main__':  # pragma: no cover
+    main()
