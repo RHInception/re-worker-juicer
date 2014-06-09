@@ -56,6 +56,10 @@ class JuicerWorker(reworker.worker.Worker):
 
         self.send(
             self.reply_to, self.corr_id, {'status': 'started'}, exchange='')
+
+        self.app_logger.info("Beginning promotion of: %s to %s" % (
+            cart, environment))
+
         if self._j_pull(cart):
             self.output.info("Received cart: %s" % (cart))
             if self._j_push(cart, environment):
@@ -76,6 +80,8 @@ class JuicerWorker(reworker.worker.Worker):
                     self.corr_id,
                     {'status': 'errored'},
                     exchange='')
+
+        self.app_logger.info("Finished promotion")
 
     def _j_pull(self, cart_name):
         """
@@ -154,7 +160,9 @@ def main():  # pragma: no cover
         'user': 'guest',
         'password': 'guest',
     }
-    worker = JuicerWorker(mq_conf, output_dir='/tmp/logs/')
+    worker = JuicerWorker(mq_conf,
+                          config_file='conf/juicer.json',
+                          output_dir='/tmp/logs/')
     worker.run_forever()
 
 
