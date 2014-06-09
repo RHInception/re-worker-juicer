@@ -10,7 +10,7 @@
 Name: re-worker-juicer
 Summary: RE RPM package propagation worker
 Version: 0.0.1
-Release: 1%{?dist}
+Release: 2%{?dist}
 
 Group: Applications/System
 License: AGPLv3
@@ -18,8 +18,10 @@ Source0: %{_src_name}-%{version}.tar.gz
 Url: https://github.com/rhinception/re-worker-juicer
 
 BuildArch: noarch
-BuildRequires: python2-devel, python-setuptools
-Requires: reworker, juicer
+BuildRequires: python2-devel
+BuildRequires: python-setuptools
+Requires: re-worker
+Requires: juicer
 
 %description
 The Juicer worker worker allows you to upload and promote batches of RPMs
@@ -40,5 +42,8 @@ referred to as release carts.
 %dir %{python2_sitelib}/%{_pkg_name}
 
 %changelog
+* Mon Jun  9 2014 Chris Murphy <chmurphy@redhat.com> - 0.0.1-2
+- Fix of rpm dependencies
+
 * Thu Jun  5 2014 Steve Milner <stevem@gnulinux.et> - 0.0.1-1
 - First release
