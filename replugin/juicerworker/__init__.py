@@ -39,7 +39,7 @@ class JuicerWorker(reworker.worker.Worker):
                 self.corr_id)
             self.send(self.reply_to,
                       self.corr_id,
-                      {'status': 'errored',
+                      {'status': 'failed',
                        "message": "No dynamic keys given, expected 'cart' and 'environment'"},
                       exchange='')
             return False
@@ -78,7 +78,7 @@ class JuicerWorker(reworker.worker.Worker):
                 self.send(
                     self.reply_to,
                     self.corr_id,
-                    {'status': 'errored'},
+                    {'status': 'failed'},
                     exchange='')
 
         self.app_logger.info("Finished promotion")
@@ -113,7 +113,7 @@ class JuicerWorker(reworker.worker.Worker):
             self.send(
                 self.reply_to,
                 self.corr_id,
-                {'status': 'errored'},
+                {'status': 'failed'},
                 exchange='')
             return False
 
