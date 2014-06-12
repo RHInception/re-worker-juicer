@@ -153,17 +153,8 @@ def main():  # pragma: no cover
     logging.getLogger('pika').setLevel(logging.CRITICAL)
     logging.getLogger('pika.channel').setLevel(logging.CRITICAL)
 
-    mq_conf = {
-        'server': '127.0.0.1',
-        'port': 5672,
-        'vhost': '/',
-        'user': 'guest',
-        'password': 'guest',
-    }
-    worker = JuicerWorker(mq_conf,
-                          config_file='conf/juicer.json',
-                          output_dir='/tmp/logs/')
-    worker.run_forever()
+    from reworker.worker import runner
+    runner(JuicerWorker)
 
 
 if __name__ == '__main__':  # pragma: no cover
