@@ -41,8 +41,12 @@ referred to as release carts.
 %files -f re-worker-juicer-files.txt
 %doc README.md LICENSE AUTHORS
 %dir %{python2_sitelib}/%{_pkg_name}
+%exclude %{python2_sitelib}/%{_pkg_name}/__init__.py
 
 %changelog
+* Tue Jun 17 2014 Ryan Cook <rcook@redhat.com> - 0.0.1-4
+- Added exclude __init__.py which was causing a conflict
+
 * Thu Jun 12 2014 Steve Milner <stevem@gnulinux.et> - 0.0.1-3
 - python-setuptools is required.
 
