@@ -10,7 +10,7 @@
 Name: re-worker-juicer
 Summary: RE RPM package propagation worker
 Version: 0.0.1
-Release: 4%{?dist}
+Release: 5%{?dist}
 
 Group: Applications/System
 License: AGPLv3
@@ -41,9 +41,12 @@ referred to as release carts.
 %files -f re-worker-juicer-files.txt
 %doc README.md LICENSE AUTHORS
 %dir %{python2_sitelib}/%{_pkg_name}
-%exclude %{python2_sitelib}/%{_pkg_name}/__init__.py
+%exclude %{python2_sitelib}/%{_pkg_name}/__init__.py*
 
 %changelog
+* Tue Jun 17 2014 Ryan Cook <rcook@redhat.com> - 0.0.1-5
+- Added exclude __init__.py*
+
 * Tue Jun 17 2014 Ryan Cook <rcook@redhat.com> - 0.0.1-4
 - Added exclude __init__.py which was causing a conflict
 
