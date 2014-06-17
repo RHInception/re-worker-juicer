@@ -10,7 +10,7 @@
 Name: re-worker-juicer
 Summary: RE RPM package propagation worker
 Version: 0.0.1
-Release: 3%{?dist}
+Release: 4%{?dist}
 
 Group: Applications/System
 License: AGPLv3
